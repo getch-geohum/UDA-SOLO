@@ -44,158 +44,8 @@ from skimage.io import imread
 from skimage import measure
 from skimage import draw
 from torchvision.ops import masks_to_boxes
-#import mmcv
+import mmcv
 
-## This is mainly for SOLO model
-# import mmcv
-# from mmcv.runner import load_checkpoint
-# from mmdet.apis import inference_detector, show_result_pyplot
-#from mmdet.models import build_detector
-# from mmdet.datasets import build_dataset, build_dataloader
-# import torch.optim as optim
-# from torch.utils.data import DataLoader
-# from itertools import cycle
-# import torch
-# import numpy as np
-# import argparse
-# import json
-# import os
-# import copy
-
-### Common for all input output images ###
-
-def scale_8bit(data, cmin=None, cmax=None, high=255, low=0):
-    """
-    Converting the input image to uint8 dtype and scaling
-    the range to ``(low, high)`` (default 0-255). If the input image already has 
-    dtype uint8, no scaling is done.
-    :param data: 16-bit image data array
-    :param cmin: bias scaling of small values (def: data.min())
-    :param cmax: bias scaling of large values (def: data.max())
-    :param high: scale max value to high. (def: 255)
-    :param low: scale min value to low. (def: 0)
-    :return: 8-bit image data array
-    """
-    if data.dtype == np.uint8:
-        return data
-
-    if high > 255:
-        high = 255
-    if low < 0:
-        low = 0
-    if high < low:
-        raise ValueError("`high` should be greater than or equal to `low`.")
-
-    if cmin is None:
-        cmin = data.min()
-    if cmax is None:
-        cmax = data.max()
-
-    cscale = cmax - cmin
-    if cscale == 0:
-        cscale = 1
-
-    scale = float(high - low) / cscale
-    bytedata = (data - cmin) * scale + low
-    return (bytedata.clip(low, high) + 0.5).astype(np.uint8)
-
-
-def std_stretch_data(data, n=2.5):
-    """Applies an n-standard deviation stretch to data."""
-
-    mean, d = data.mean(), data.std() * n
-    new_min = math.floor(max(mean - d, data.min()))
-    new_max = math.ceil(min(mean + d, data.max()))
-    
-    data = np.clip(data, new_min, new_max)
-    data = (data - data.min()) / (new_max - new_min)
-    data = data*255
-    return data.astype(np.uint8)
-
-def std_stretch_all(img, std = 2.5, chanell_order = "last"):
-    if chanell_order == "first":
-        stacked = np.dstack((std_stretch_data(img[2,:,:], std), std_stretch_data(img[1,:,:], std),std_stretch_data(img[0, :,:], std)))
-    else:
-        stacked =  np.dstack((std_stretch_data(img[:,:,2], std), std_stretch_data(img[:,:,1], std),std_stretch_data(img[:,:,0], std)))
-
-    return stacked
-
-
-def shiftaxis(img):
-    if len(img.shape) == 2:
-        pass
-    elif len(img.shape) == 3:
-        imreshap = np.swapaxes(np.swapaxes(img, 1,2), 0,1)
-    elif len(img.shape) == 4:
-        imreshap = np.swapaxes(np.swapaxes(img, 2,3), 1,2)
-    else:
-        imreshap = None
-        print('image with unknown shape is provided, returen None value')
-    
-    return imreshap
-
-def read_images(im, scale=False, stretch=False, shiftaaxis=True):
-    img = imread(im)
-    if scale:
-        img = scale_8bit(img)
-    if stretch:
-        img = std_stretch_all(img)
-    if shiftaaxis:
-        return shiftaxis(img)
-    else:
-        return img
-    
-def read_labels(im, shiftaaxis=True):
-    img = imread(im)
-    if shiftaaxis:
-        img = np.expand_dims(img, axis = -1)
-        return shiftaxis(img)
-    else:
-        return img
-
-def auto_read(fold, types='im'):
-    if types == 'im':
-        fs = [read_images(im) for im in fold]
-        fs = np.array(fs)
-        return fs
-    elif types == 'lb':
-        fs = [read_labels(im) for im in fold]
-        fs = np.array(fs)
-        return fs
-    else:
-        raise ValueError('Unknown image type')
-
-
-def run_batch(tensor, b_size, M, model_type='seg'):
-    '''
-    Tensor: image tensor read from batch of file paths
-    
-    '''
-    device =  torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    assert model_type in ['seg', 'det']
-    if model_type == 'det':
-        lists = []
-        inds = list(range(0, tensor.shape[0],b_size))
-        for i in inds:
-            with torch.no_grad():
-                im = tensor[i:i+b_size,:3,:,:].to(device, dtype=torch.float)
-                feature, _ , _ =  M.forward_train(im)
-                lists.append(feature[-1].cpu().reshape(feature[-1].shape[0],-1))
-        lists = torch.cat(lists, dim=0)
-        return lists
-    elif model_type == 'seg': ## work on any segmentation model
-        lists = []
-        inds = list(range(0, tensor.shape[0],b_size))
-        for i in inds:
-            with torch.no_grad():
-                im = tensor[i:i+b_size,:3,:,:].float().cuda() # .to(device, dtype=torch.float)  # check
-                print(f'image shape: {im.shape}')
-                feature =  torch.nn.AvgPool2d(8)(M(im)[-1])
-                print(f'feature shape: {feature.shape}')
-                lists.append(feature.cpu().reshape(feature.shape[0],-1))
-                # lists.append(feature[-1].cpu().reshape(feature[-1].shape[0],-1))
-        lists = torch.cat(lists, dim=0)
-        return lists
 
 # TSNE related features 
 def compute_iou(mask1, mask2):
@@ -259,43 +109,50 @@ class ConvexHull: # computes the convex hull of two masks
 
 
 class GeneratEmbedFeatures:
-    def __init__(self, data_root, out_root, model):
+    def __init__(self, data_root=None, out_root=None):
         self.data_root = data_root
         self.out_root = out_root
-        self.model = model
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.format = '.tif'
+        # self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.format = '.npy'
         
     def generate_tsne_features(self):
         if not os.path.exists(self.out_root):
-            os.makedirs(out_root, exist_ok=True)
+            os.makedirs(self.out_root, exist_ok=True)
         folds = os.listdir(self.data_root)
 
         sit_ind = []
         fname = []
         length = []
         array = []
-        print(f'Model device: {self.device}')
-        self.model.to(self.device)
+        # print(f'Model device: {self.device}')
+        # self.model.to(self.device)
         
         for i, fold in enumerate(folds):
+            oo = 0
             print(f'processing for folder {fold}')
-            path = os.path.join(self.data_root, fold, 'images')
-            paths = glob(path + '/*{}'.format(self.format))
+            path = self.data_root + '/' + fold
+            paths = [path + f'/{file}' for file in os.listdir(path)] # path + '/*{}'.format(self.format))
             if len(paths) == 0:
                 pass
             else:
-                sit_ind+=[i]*len(paths)
-                imgs = auto_read(paths)
-                imgs = torch.from_numpy(imgs/255)
-                outs = run_batch(imgs, 10, self.model) #model(imgs)
-                print(f'Output shape for folder: {fold}, input shape: :{imgs.shape}, output shape: {outs.shape}')
-                array.append(outs)
                 fname.append(fold)
-                length.append(outs.shape[0])
-        big_array = torch.cat(array, dim=0)
+                #                 sit_ind+=[i]*len(paths)
+#                 imgs = np.array([np.load(aa, allow_pickle=True).ravel() for aa in paths]) # allow_pickle=True
+                for path in paths:
+                    img = np.load(path, allow_pickle=True) # .ravel()
+                    b, c = img.shape
+                    print(b, c, 'shapes')
+#                     imgs = np.array([np.load(aa, allow_pickle=True).ravel() for aa in paths])
+                    sit_ind+=[i]*b # len(paths)
+                    print(f'Output shape for folder: {fold}, sub outout shape:{img.shape}')
+                    array.append(img.reshape(b,-1))
+#                     fname.append(fold)
+                    oo+=1
+                length.append(oo)
+#                 length.append(imgs.shape[0])
+        npyy = np.concatenate(array, axis=0)
 
-        npyy = big_array.numpy()
+        # npyy = big_array.numpy()
         assert len(sit_ind) == npyy.shape[0], 'Site index length and array length not matching'
 
         np.save(self.out_root + '/deep_features', npyy)
@@ -314,17 +171,17 @@ class GeneratEmbedFeatures:
             print(f'Site names written in {self.out_root}')
 
         print('Computing TSNE')
-        tsne = TSNE(n_components=2,
-                    init='pca',
-                    perplexity=50,
-                    n_iter=5000,
-                    n_jobs=-1).fit_transform(big_array)
+#         tsne = TSNE(n_components=2,
+#                     init='pca',
+#                     perplexity=50,
+#                     n_iter=5000,
+#                     n_jobs=-1).fit_transform(npyy)
 
-        np.save(self.out_root + '/tsne_out', tsne)
-        print(f'TSNE features written in {self.out_root}')
-        print(f'Feature space comutation done!')
-        if len(sit_ind) !=tsne.shape[0]:
-            print(f'Warning, TSNE FEATURE AND INDEX DID NOT MATCH')
+#         np.save(self.out_root + '/tsne_out', tsne)
+#         print(f'TSNE features written in {self.out_root}')
+#         print(f'Feature space comutation done!')
+#         if len(sit_ind) !=tsne.shape[0]:
+#             print(f'Warning, TSNE FEATURE AND INDEX DID NOT MATCH')
     
     def plot_joint_feature_space(self):
         index_site_name = self.out_root + '/sit_ind_sit_name.json'
@@ -337,7 +194,7 @@ class GeneratEmbedFeatures:
         sites_names.sort()
 
         data = np.load(self.out_root + '/tsne_out.npy')
-        campcolor = np.load(self.out_root + '/site_index.npy')
+        campcolor = np.load(self.out_root + '/site_index.npy', allow_pickle=True)
 
         ########################################################
         ###### Outliers  
@@ -398,11 +255,18 @@ class GeneratEmbedFeatures:
 
             plt.subplots_adjust(hspace=0.2)
 
-        plt.savefig(os.path.join(self.out_root,'vgg19-tsne-site-colors.png'), format='png', bbox_inches='tight')
+        plt.savefig(os.path.join(self.out_root,'vgg19-tsne-site-colors_new_new.png'), format='png', bbox_inches='tight')
 
         plt.show(block=True)
     
     def plot_joint_single_space(self):
+        
+        camps_ = {'kutuplog_dec_2017': 'Kutupalong Dec 2017',
+                  'kutuplong_feb_2018':'Kutupalong Feb 2018',
+                  'minawa_12feb2017': 'Minawao Feb 2017',
+                  'minawa_june_2016': 'Minawao Jun 2016',
+                  'nguyen_june_2018': 'Nguenygiel Jun 2018',
+                  'tza_nduta_21oct2016': 'Nduta Oct 2016'}
         index_site_name = self.out_root + '/sit_ind_sit_name.json'
         with open(index_site_name) as jopen_file:
             sites = ast.literal_eval(json.load(jopen_file))
@@ -412,8 +276,8 @@ class GeneratEmbedFeatures:
         sites_names = sites 
         sites_names.sort()
 
-        data = np.load(self.out_root + '/tsne_out.npy')
-        campcolor = np.load(self.out_root + '/site_index.npy')
+        data = np.load(self.out_root + '/tsne_out.npy', allow_pickle=True)
+        campcolor = np.load(self.out_root + '/site_index.npy', allow_pickle=True)
 
         ########################################################
         ###### Outliers  
@@ -426,9 +290,9 @@ class GeneratEmbedFeatures:
             colors_camps[i] = np.array(palette[i])
 
 
-        figfigfig, axaxax = plt.subplots(figsize=(10,10)) # 2,5,sharex=True, sharey=True,
-        markers = ['o', '*', '^','<','>','v','p','+','d','1']
-        cm_list = ["#FF00FF","#8A2BE2","#00FF00","#00FFFF","#0000FF","#000080","#DAA520","#2F4F4F","#FFD700","#FF0000"] 
+        figfigfig, axaxax = plt.subplots(figsize=(10,10)) # 2,5,sharex=True, sharey=True, 10,10
+        markers = ['o', '*', '^','<','>','v','p','+','d','1', "4"]
+        cm_list = ["#FF00FF","#8A2BE2","#00FF00","#00FFFF","#0000FF","#000080","#DAA520","#2F4F4F","#FFD700","#FF0000", "#DFFF00"] 
 
         for i, camp in enumerate(sites):
             print(camp)
@@ -462,7 +326,8 @@ class GeneratEmbedFeatures:
             Z = Z.reshape(xx.shape)
 
             # This plots the points and surfaces site by site
-            # axaxax.contourf(xx, yy, df, levels=[-.9, df.max()], colors=cm_list[i], alpha = .3) # alpha .6
+            axaxax.contour(xx, yy, df, levels=[-.9, df.max()], colors=cm_list[i], alpha = .6, linestyles='solid') # alpha .6  to be changed
+#             axaxax.scatter(x,y,c=cm_list[i], s=5, label=camps_[camp], alpha=1, marker=markers[i])
             axaxax.scatter(x,y,c=cm_list[i], s=5, label=camp, alpha=1, marker=markers[i])
             # axaxax[id_x, id_y].set_title(sites_names[i], fontdict={'family':'serif', 'fontsize': 11,
             #     'fontweight' : 'normal',
@@ -471,12 +336,12 @@ class GeneratEmbedFeatures:
 
         plt.setp(axaxax.get_xticklabels(), visible=False)
         plt.setp(axaxax.get_yticklabels(), visible=False)
-        plt.ylabel('PCA-1')
-        plt.xlabel('PCA-2')
+        plt.ylabel('Features-1')
+        plt.xlabel('Features-2')
         plt.xticks([]),plt.yticks([])
         plt.subplots_adjust(hspace=0.2)
         plt.legend()
-        plt.savefig(os.path.join(self.out_root,'all-in-one_tsne-site-colors.png'), format='png', bbox_inches='tight')
+        plt.savefig(os.path.join(self.out_root,'all-in-one_tsne-site-colorsFFF_new_f.png'), format='png', bbox_inches='tight', dpi=350)
         plt.show(block=True)
         
     def generate_mask(self):
@@ -490,8 +355,8 @@ class GeneratEmbedFeatures:
         sites_names = sites
         sites_names.sort()
 
-        data = np.load(self.out_root + '/tsne_out.npy')
-        campcolor = np.load(self.out_root + '/site_index.npy')
+        data = np.load(self.out_root + '/tsne_out.npy', allow_pickle=True)
+        campcolor = np.load(self.out_root + '/site_index.npy', allow_pickle=True)
         
         # c = tuple(color[0])
         xmin, xmax = data[:, 0].min(), data[:,0].max()  # chack
@@ -501,7 +366,6 @@ class GeneratEmbedFeatures:
         ###### Outliers detection ###
 
         palette = sns.color_palette('hls',n_colors=len(sites))   # n_colors = number of sites you are analizing
-
         colors_camps = np.empty((len(sites),1,3))
 
         for i in range(len(colors_camps)):
@@ -564,8 +428,8 @@ class GeneratEmbedFeatures:
 
         for i, camp1 in enumerate(sites):
             for j, camp2 in enumerate(sites):
-                mask1 = np.load(mask_path.format(camp1))
-                mask2 = np.load(mask_path.format(camp2))
+                mask1 = np.load(mask_path.format(camp1), allow_pickle=True)
+                mask2 = np.load(mask_path.format(camp2), allow_pickle=True)
                 iou = compute_iou(mask1, mask2)
                 mat1[i,j] = iou
                 # print('iou',city1,city2,'=', iou)
@@ -602,12 +466,14 @@ class GeneratEmbedFeatures:
 
         for i, camp1 in enumerate(sites):
             for j, camp2 in enumerate(sites):
-                mask1 = np.load(mask_path.format(camp1))
-                mask2 = np.load(mask_path.format(camp2))
-                iot = compute_iot(mask1, mask2)
-                mat[i,j] = iot
+                if i == j:
+                     mat[i,j] = 1
+                else:
+                    mask1 = np.load(mask_path.format(camp1), allow_pickle=True)
+                    mask2 = np.load(mask_path.format(camp2), allow_pickle=True)
+                    iot = compute_iot(mask1, mask2)
+                    mat[i,j] = iot
                 # print('iou',city1,city2,'=', iou)
-
         cm = pd.DataFrame(mat, index=sites, columns=sites)
         fig = plt.figure(figsize=(4,4))
         cmap = sns.cubehelix_palette(as_cmap=True)
@@ -687,15 +553,18 @@ class GeneratEmbedFeatures:
 
         for i, camp1 in enumerate(sites):
             for j, camp2 in enumerate(sites):
-                mask1 = np.load(mask_path.format(camp1))
-                mask2 = np.load(mask_path.format(camp2))
+                if i == j:
+                    mat[i,j] = 1
+                else:
+                    mask1 = np.load(mask_path.format(camp1), allow_pickle=True)
+                    mask2 = np.load(mask_path.format(camp2), allow_pickle=True)
                 # iou = compute_iou(mask1, mask2)
-                intersection = np.sum(mask1*mask2)
-                union = np.sum(mask1) + np.sum(mask2) - intersection
-                iou = intersection/union
-                hul = ConvexHull().compute(mask1, mask2)
-                giou = iou-(hul-union)/hul
-                mat[i,j] = giou
+                    intersection = np.sum(mask1*mask2)
+                    union = np.sum(mask1) + np.sum(mask2) - intersection
+                    iou = intersection/union
+                    hul = ConvexHull().compute(mask1, mask2)
+                    giou = iou-(hul-union)/hul
+                    mat[i,j] = giou
                 # print('giou',camp,camp,'=', iou)
 
         cm1 = pd.DataFrame(mat, index=sites, columns=sites)
@@ -707,8 +576,6 @@ class GeneratEmbedFeatures:
         cbar_labels = cbar_ax.get_yticklabels()
         cbar_ax.set_yticklabels(cbar_labels, fontsize='x-small', fontdict={'family': 'serif'})
 
-        # st()
-        # ax.set_ylim(top + 0.5, bottom - 0.5,)
         ax.set_xticklabels(sites_names, rotation=80, fontsize='small', va='top', fontdict={'family':'serif'})
         ax.set_yticklabels(sites_names, fontsize='small', fontdict={'family':'serif'})
 
@@ -740,8 +607,8 @@ class GeneratEmbedFeatures:
         names = list(names.values())
         names.sort()
         
-        data = np.load(self.out_root + '/tsne_out.npy')
-        indexes = np.load(self.out_root + '/site_index.npy')
+        data = np.load(self.out_root + '/tsne_out.npy', allow_pickle=True)
+        indexes = np.load(self.out_root + '/site_index.npy', allow_pickle=True)
         uniq_ind = list(np.unique(indexes))
         if one2one:
             save_dir = self.out_root + '/crossplot'
@@ -776,49 +643,19 @@ class GeneratEmbedFeatures:
 
 def argumentParser():
     parser = argparse.ArgumentParser(description = 'Deep feature space embeding plot')
-    parser.add_argument('--data_root', help='data folder, can be either with single task or multi task', type=str, required=False)
-    parser.add_argument('--mtype', help='type of a model, segmentation or detection', type=str, default='seg', required=False)
-    parser.add_argument('--save_dir', help = 'main root to save the test result', type = str,required=False)
-    parser.add_argument('--weights', help='Trained model checkpoint', type=str, required=False)
-    parser.add_argument('--config', help='configuration file', type=str, required=False)
-    parser.add_argument('--builtin', help='Whether to use builting pretrained model', type=str, required=False, default='yes')
+    parser.add_argument('--data_root', help='data folder, can be either with single task or multi task', type=str, required=False, default='path 2 features')
+    parser.add_argument('--save_dir', help = 'main root to save the test result', type = str, required=False, default='path 2 save PLOTS')
     
     arg = parser.parse_args()
     return arg
 
 if __name__ == "__main__":
     args = argumentParser()
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    if args.mtype == 'seg':
-        if args.builtin=='no':
-            pass
-        else:
-            model = models.resnet50(pretrained=True)
-#         new_model = copy.deepcopy(model.model.encoder)
-        
-        model.eval()
-        generator = GeneratEmbedFeatures(data_root=args.data_root,out_root=args.save_dir,model=model.to(device))
-        generator.generate_tsne_features()
-        generator.plot_joint_feature_space()
-        generator.plot_joint_single_space() # new
-        generator.generate_mask()
-        generator.compute_simmilarity()
-        generator.compute_simmilarity_GIOU() # new
-        generator.crossfeature_space_plot()
-        
-    elif args.mtype == 'det': # if needed  t se trained model weight on custm data
-        print('Segmentation featre space plot on progress...')
-        config = mmcv.Config.fromfile(args.config)
-        model = build_detector(config.model)
-        #model.load_state_dict(torchload(args.weights))
-        model.eval()
-        generator = GeneratEmbedFeatures(data_root=args.data_root, out_root=args.save_dir,model=model)
-        generator.generate_tsne_features()
-        generator.plot_joint_feature_space()
-        generator.plot_joint_single_space() # new
-        generator.generate_mask()
-        generator.compute_simmilarity()
-        generator.compute_simmilarity_GIOU() # new
-        generator.crossfeature_space_plot()
-    else:
-        raise ValueError('Specified model type {args.mtype} is not known')
+    generator = GeneratEmbedFeatures(data_root=args.data_root,out_root=args.save_dir)
+    generator.generate_tsne_features()
+    generator.plot_joint_feature_space()
+    generator.plot_joint_single_space() 
+    generator.generate_mask()
+    generator.compute_simmilarity()
+    generator.compute_simmilarity_GIOU()
+    generator.crossfeature_space_plot()
