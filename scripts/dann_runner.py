@@ -141,7 +141,7 @@ def domain_target(batch_size=(2,2), soure_first=True):
 def train_DNN(Config, checkpoint_dir, source_dir, target_dir, epochs=65, learning_rate=0.001,checkpoint=None): # resume_from=None
     torch.cuda.empty_cache() # to freed memory catch especially for batch training
     config = mmcv.Config.fromfile(Config)
-    config.model.bbox_head.num_classes = 2 # mae sure nclass = classes +1 (dwelling  +1)
+    config.model.bbox_head.num_classes = 3 # mae sure nclass = classes +1 (dwelling  +1)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') # #     device ='cuda:0'
     model = build_detector(config.model)
     model.CLASSES = ('background', 'dwelling',)
