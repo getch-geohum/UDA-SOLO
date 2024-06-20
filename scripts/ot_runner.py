@@ -109,7 +109,7 @@ class LabeAlignment:
         A = torch.from_numpy(ot.unif(a)).cuda()
         B = torch.from_numpy(ot.unif(b)).cuda()
         cost = ot.dist(x1.view(a, -1), x2.view(b, -1).float().cuda(), metric= 'euclidean')
-        #print('ll: ', [A.min(), A.max()], [B.min(), B.max()], [x1.min(), x1.max()], [x2.min(), x2.max()], [cost.min(), cost.max()])
+    
         if not cost.is_cuda:
             cost.cuda()
         gamma = ot.emd(A, B, cost)
@@ -337,7 +337,7 @@ def train_OT(Config, checkpoint_dir,source_data, target_data, epochs=65, learnin
 
 def argumentParser():
     parser = argparse.ArgumentParser(description="Sample mixed model trainer parameters")
-    parser.add_argument("--config", help="Directory for model configuration",type=str, default = 'path2 train_config file')
+    parser.add_argument("--config", help="Directory for model configuration",type=str, default = './SOLO/configs/solov2/train_configs.py')
     parser.add_argument('--save_dir', help="Directory to save the checkpoint", type=str, default = 'path 2 save directory')
     parser.add_argument('--epochs', help='number of epochs', type=int, default=65)
     parser.add_argument('--data_dir', help='main data directory', type=str, required=False, default = 'path 2 directory that contain all training and validation data folders')
