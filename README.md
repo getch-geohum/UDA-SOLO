@@ -23,7 +23,7 @@ To train a domain adaptation, run the following independently
 python dann_runner.py
 python mmd_runner.py
 python ot_runner.py
-python base_runner.py # or alternatively pthon ./SOLO/tools/train.py 
+python base_runner.py # or alternatively pthon ./SOLO/tools/train.py  # During base training shared encoder should be chnaged to sinle encoder
 ```
 To make inference and evaluate detections
 ```
