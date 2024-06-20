@@ -313,7 +313,7 @@ def train_DNN(Config, checkpoint_dir, source_dir, target_dir, epochs=65, learnin
 
 def argumentParser():
     parser = argparse.ArgumentParser(description="Sample mixed model trainer parameters")
-    parser.add_argument("--config", help="Directory for model configuration",type=str, default = 'path 2 training configuration file')
+    parser.add_argument("--config", help="Directory for model configuration",type=str, default = './SOLO/configs/solov2/train_configs.py')
     parser.add_argument('--save_dir', help="Directory to save the checkpoint", type=str, default = 'path 2 save logs')
     parser.add_argument('--epochs', help='number of epochs', type=int, default=65)
     parser.add_argument('--data_dir', help='main data directory', type=str, required=False, default = 'path 2 a folder containing all data')
@@ -323,7 +323,7 @@ def argumentParser():
     return args
 
 if __name__ == '__main__':
-    args = argumentParser()  # '/home/getch/ssl/UDA/OUTS/nguyen_june_2018/epoch_65.pth' 
+    args = argumentParser() 
     target_folds = os.listdir(args.data_dir)   #
     base_weights = 'path 2 supervised weight on source datset'  # optional
     source_folds = os.listdir(args.data_dir)
