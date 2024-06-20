@@ -23,8 +23,10 @@ To train a domain adaptation, run the following independently
 python dann_runner.py
 python mmd_runner.py
 python ot_runner.py
+python base_runner.py # or alternatively pthon ./SOLO/tools/train.py 
 ```
 To mae inference and evaluate detections
 ```
+python ./SOLO/tools/test_ins.py config './SOLO/configs/models/solov2train_config.py' checkpoint 'path to trained checkpoint' --out 'output path' --eval segm 
 python coco_evaluate.py
 ```
