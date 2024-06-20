@@ -29,7 +29,7 @@ model = dict(
         loss_ins=dict(
             type='DiceLoss',
             use_sigmoid=True,
-            loss_weight=3.0),
+            loss_weight=4.0),
         loss_cate=dict(
             type='FocalLoss',
             use_sigmoid=True,
@@ -56,14 +56,14 @@ test_cfg = dict(
     sigma=2.0,
     max_per_img=100)
 # dataset settings
-dataset_type = 'MyDataset' # should be the same with custom dataset prepared in 
-data_root = '/share/home/gella/minawao_2016b/'
+dataset_type = 'MyDataset' # should be the same with custom dataset prepared in ./SOLO/mmdet/datasets/my_dataset.py
+data_root = 'path 2 data root'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
-    dict(type='Resize', img_scale=(1333, 800), keep_ratio=True),
+    dict(type='Resize', img_scale=(256, 256), keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
