@@ -49,7 +49,7 @@ model = dict(
 train_cfg = dict()
 test_cfg = dict(
     nms_pre=500,
-    score_thr=0.1,
+    score_thr=0.3,
     mask_thr=0.5,
     update_thr=0.05,
     kernel='gaussian',  # gaussian/linear
@@ -104,7 +104,7 @@ data = dict(
         img_prefix=data_root + 'test/',
         pipeline=test_pipeline))
 # optimizer
-optimizer = dict(type='SGD', lr=0.00125, momentum=0.9, weight_decay=0.0001)
+optimizer = dict(type='SGD', lr=0.001, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
