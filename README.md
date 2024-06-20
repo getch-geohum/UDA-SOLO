@@ -8,20 +8,20 @@ python spatial_sampling.py
 To prepare samples to coco annotation format use
 
 ```
-python label_to_coco_annotation.py
+python label_to_coco_annotation.py 
 ```
 To generate deep feature space embeding with deep feature space simiarity, image lavel simmiarity and obect level simmiarity metrics, run the following independently
 
 ```
 python generate features.py
-pthon automate_feature_space_plot.py
-pthon image_simmiarity.py
+python automate_feature_space_plot.py
+python image_simmiarity.py
 ```
 
 To train a domain adaptation, run the following independently
 ```
 python dann_runner.py
-pthon mmd_runner.py
+python mmd_runner.py
 python ot_runner.py
 ```
 To mae inference and evaluate detections
