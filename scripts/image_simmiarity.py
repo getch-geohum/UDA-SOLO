@@ -8,8 +8,10 @@ import argparse
 from glob import glob
 from tqdm import tqdm
 import itertools
+
 """Please note that this script is computationaly demanding. 
 Alternatively activating the sampling option will an option to perfom metrics only on selected samples"""
+
 def makeNormal(x):
     return (x-x.min())/(x.max()-x.min())
 
