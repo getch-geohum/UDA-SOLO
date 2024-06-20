@@ -28,5 +28,5 @@ python base_runner.py # or alternatively pthon ./SOLO/tools/train.py  # During b
 To make inference and evaluate detections
 ```
 python ./SOLO/tools/test_ins.py config './SOLO/configs/models/solov2train_config.py' checkpoint 'path to trained checkpoint' --out 'output path' --eval segm 
-python coco_evaluate.py
+python coco_evaluate.py or generate accurac results together with "python ./SOLO/tools/test_ins.py"
 ```
