@@ -42,7 +42,7 @@ def base_line_trainer(CONFIG, checkpoint_dir,data_dir, epochs = 65):
     v_datasets = build_dataset(vconfig)
     v_loader = build_dataloader(v_datasets,config.data.imgs_per_gpu, config.data.workers_per_gpu, dist=False)
 
-    optimizer = optim.SGD(model.parameters(),lr=0.00125, momentum=0.9, weight_decay=0.0001)
+    optimizer = optim.SGD(model.parameters(),lr=0.001, momentum=0.9, weight_decay=0.0001)
     ml_scheduler = optim.lr_scheduler.MultiStepLR(optimizer, [10, 13], 0.1)
     scaler = GradScaler()
 
