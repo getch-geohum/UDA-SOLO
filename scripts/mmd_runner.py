@@ -136,7 +136,7 @@ def train_MMD(Config, checkpoint_dir,source_dir, target_dir, epochs=65, learning
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') 
     model = build_detector(config.model)
     model.load_state_dict(torch.load(checkpoint)["state_dict"])
-    model.CLASSES = ('dwelling',)
+    model.CLASSES = ('bacground', 'dwelling',)
     model.train()  # Convert the model into evaluation mode
     model.to(device)
 
