@@ -294,7 +294,7 @@ def train_MMD(Config, checkpoint_dir,source_dir, target_dir, epochs=65, learning
 
 def argumentParser():
     parser = argparse.ArgumentParser(description="Sample mixed model trainer parameters")
-    parser.add_argument("--config", help="Directory for model configuration",type=str, default = 'path 2 train configuration file')
+    parser.add_argument("--config", help="Directory for model configuration",type=str, default = './SOLO/configs/solov2/train_configs.py')
     parser.add_argument('--save_dir', help="Directory to save the checkpoint", type=str, default = 'path to save logs')
     parser.add_argument('--epochs', help='number of epochs', type=int, default=65)
     parser.add_argument('--data_dir', help='main data directory', type=str, required=False, default = 'path 2 folder that contain training and validation data')
