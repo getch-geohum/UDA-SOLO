@@ -144,7 +144,7 @@ def train_DNN(Config, checkpoint_dir, source_dir, target_dir, epochs=65, learnin
     config.model.bbox_head.num_classes = 2 # mae sure nclass = classes +1 (dwelling  +1)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') # #     device ='cuda:0'
     model = build_detector(config.model)
-    model.CLASSES = ('dwelling',) # ('background', 'dwelling',)
+    model.CLASSES = ('background', 'dwelling',)
     
     model.load_state_dict(torch.load(checkpoint)["state_dict"])
     print(f'The weight was loaded from: {checkpoint}')
