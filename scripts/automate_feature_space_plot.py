@@ -46,7 +46,8 @@ from skimage import draw
 from torchvision.ops import masks_to_boxes
 import mmcv
 
-
+"""Some functions used for plotting the feature space are contribted from Javiera Castillo-Navarro from their work "Semi-supervised semantic segmentation in Earth observation: 
+The MiniFrance suite dataset analysis and multi-task network study", Mach. Learn., vol. 111, pp. 3125-3160, 2022."""
 # TSNE related features 
 def compute_iou(mask1, mask2):
     intersection = np.sum(mask1*mask2)
