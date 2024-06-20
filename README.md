@@ -6,7 +6,6 @@ To make spatial sampling of image chips
 python spatial_sampling.py
 ```
 To prepare samples to coco annotation format use
-
 ```
 python label_to_coco_annotation.py 
 ```
@@ -15,7 +14,8 @@ To generate deep feature space embeding with deep feature space simiarity, image
 ```
 python generate features.py
 python automate_feature_space_plot.py
-python image_simmiarity.py
+python image_simmiarity.py   # final outputs need summary and visualization
+python object_simmilarity # final outputs need summary and visualization
 ```
 
 To train a domain adaptation, run the following independently
@@ -25,7 +25,7 @@ python mmd_runner.py
 python ot_runner.py
 python base_runner.py # or alternatively pthon ./SOLO/tools/train.py 
 ```
-To mae inference and evaluate detections
+To make inference and evaluate detections
 ```
 python ./SOLO/tools/test_ins.py config './SOLO/configs/models/solov2train_config.py' checkpoint 'path to trained checkpoint' --out 'output path' --eval segm 
 python coco_evaluate.py
