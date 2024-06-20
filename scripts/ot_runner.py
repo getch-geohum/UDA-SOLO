@@ -150,7 +150,7 @@ def train_OT(Config, checkpoint_dir,source_data, target_data, epochs=65, learnin
     
     print(f'epoch: {epochs} lr : {learning_rate}  beta: {beta}  alpha: {alpha}')
     config = mmcv.Config.fromfile(Config)
-    config.model.bbox_head.num_classes = 2
+    config.model.bbox_head.num_classes = 3
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') # #     device ='cuda:0'
     model = build_detector(config.model)
     checkpoint = None
