@@ -3,30 +3,30 @@ This repostory is used for [**Unsupervised Domain Adaptation for Instance Segmen
 After converting function parameters inside each files, the scripts could run as:
 To make spatial sampling of image chips
 ```
-python spatial_sampling.py
+python /scripts/spatial_sampling.py
 ```
 To prepare samples to coco annotation format use
 ```
-python label_to_coco_annotation.py 
+python /scripts/label_to_coco_annotation.py 
 ```
 To generate deep feature space embeding with deep feature space simiarity, image lavel simmiarity and obect level simmiarity metrics, run the following independently
 
 ```
-python generate features.py
-python automate_feature_space_plot.py
-python image_simmiarity.py   # final outputs need summary and visualization
-python object_simmilarity # final outputs need summary and visualization
+python /scripts/generate_features.py
+python /scripts/automate_feature_space_plot.py
+python /scripts/image_simmiarity.py   # final outputs need summary and visualization
+python /scripts/object_simmilarity # final outputs need summary and visualization
 ```
 
 To train a domain adaptation, run the following independently
 ```
-python dann_runner.py
-python mmd_runner.py
-python ot_runner.py
-python base_runner.py # or alternatively pthon ./SOLO/tools/train.py  # During base training shared encoder should be chnaged to sinle encoder
+python /scripts/dann_runner.py
+python /scripts/mmd_runner.py
+python /scripts/ot_runner.py
+python /scripts/base_runner.py # or alternatively pthon ./SOLO/tools/train.py  # During base training shared encoder should be chnaged to sinle encoder
 ```
 To make inference and evaluate detections
 ```
 python ./SOLO/tools/test_ins.py config './SOLO/configs/models/solov2train_config.py' checkpoint 'path to trained checkpoint' --out 'output path' --eval segm 
-python coco_evaluate.py or generate accurac results together with "python ./SOLO/tools/test_ins.py"
+python /scripts/coco_evaluate.py or generate accurac results together with "python ./SOLO/tools/test_ins.py"
 ```
