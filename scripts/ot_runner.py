@@ -159,7 +159,7 @@ def train_OT(Config, checkpoint_dir,source_data, target_data, epochs=65, learnin
         print(f'Pretrained model weight loaded from {checkpoint}')
     else:
         print(f'Model weight is None, training will strat from scratch')
-    model.CLASSES = ('dwelling',)
+    model.CLASSES = ('bacground','dwelling',)
     f_alignment = FeatureAlignment(alpha=alpha) # this are not any more torch modules, just classes
     l_alignment = LabeAlignment(beta=beta)
 
