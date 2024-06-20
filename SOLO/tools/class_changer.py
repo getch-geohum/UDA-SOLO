@@ -10,7 +10,7 @@ def changer(file):
                          {'supercategory': 'camp', 'id': 1, 'name': 'dwelling'}]
     mmcv.dump(fls, file)
     print('done')
-root = '/home/getch/ssl/UDA/ALL'
+root = 'path to dataset with coco format root'
 for fold in os.listdir(root):
     if fold == 'minawa_june_2016':
         pass
